@@ -7,16 +7,16 @@ XML-манифесты `.nuspec` стандартной библиотекой P
 
 ## Запуск
 
-Распакуй весь ZIP и открой папку `nuget-graph-v10`. Для программы нужен
-Python 3.10 или новее. DOT и SVG создаются средствами Python. Тестовый
-режим работает локально. Для запросов к NuGet нужен доступ в интернет
-или адрес доступного сервера NuGet V3.
+Открой корневую папку проекта рядом с `run.bat` и `src`. Для программы
+нужен Python 3.10 или новее. DOT и SVG создаются средствами Python.
+Тестовый режим работает локально. Для запросов к NuGet нужен доступ
+в интернет или адрес доступного сервера NuGet V3.
 
 На Windows можно дважды щёлкнуть по `run.bat`. Запустится локальный
 пример с пакетом `A`, а окно останется открытым до нажатия клавиши.
 Файлы `A.svg` и `A.dot` появятся в папке проекта.
 
-Открой терминал в папке `nuget-graph-v10` и выполни команды.
+Выполни команды в этой же папке.
 
 ```powershell
 python -m src.main --test --repo tests/fixtures/graph.json --package A --tree
@@ -28,21 +28,18 @@ python -m unittest discover -s tests -v
 Код запускается напрямую из исходников. SVG открывается в браузере,
 DOT — в текстовом редакторе.
 
-## Как открыть этап в Git
+## Как запустить отдельный этап
 
-Каждому этапу соответствует отдельный коммит и тег. Команда
-`git log --oneline --decorate` показывает их в истории.
-Команды ниже выполняются в папке проекта. После демонстрации вернись
-к итоговой версии командой `git switch main`. Из любого этапа полный
-README можно посмотреть командой `git show main:README.md`.
+Каждый этап лежит в отдельной папке. Выполняй команды для выбранного
+этапа из корня проекта или пользуйся файлом [этапы.txt](этапы.txt).
 
-| Тег | Результат запуска |
+| Папка | Результат запуска |
 | --- | --- |
-| `stage-1` | Параметры в формате `ключ=значение`. |
-| `stage-2` | Список прямых зависимостей NuGet. |
-| `stage-3` | Список смежности после обхода BFS. |
-| `stage-4` | Обратные зависимости по флагу `--reverse`. |
-| `stage-5` | DOT, SVG и ASCII-дерево по флагу `--tree`. |
+| `demo-stage-1` | Параметры в формате `ключ=значение`. |
+| `demo-stage-2` | Список прямых зависимостей NuGet. |
+| `demo-stage-3` | Список смежности после обхода BFS. |
+| `demo-stage-4` | Обратные зависимости по флагу `--reverse`. |
+| `demo-stage-5` | DOT, SVG и ASCII-дерево по флагу `--tree`. |
 
 ## Этап 1. Консольный прототип
 
@@ -60,7 +57,7 @@ README можно посмотреть командой `git show main:README.md
 | `--exclude ПОДСТРОКА` | Исключить зависимости по непустой подстроке имени без учёта регистра. По умолчанию фильтр выключен. |
 
 ```powershell
-git switch --detach stage-1
+cd .\demo-stage-1
 python -m src.main --package Example.Package --output A.svg --tree --depth 2 --exclude Abstractions
 ```
 
@@ -87,7 +84,7 @@ python -m src.main --package A --exclude=
 На этом этапе программа печатает только непосредственные зависимости.
 
 ```powershell
-git switch --detach stage-2
+cd .\demo-stage-2
 python -m src.main --package Microsoft.Extensions.Logging --version 8.0.0 --framework net8.0
 ```
 
@@ -117,7 +114,7 @@ python -m src.main --package Microsoft.Extensions.Logging --version 8.0.0 --fram
 ```
 
 ```powershell
-git switch --detach stage-3
+cd .\demo-stage-3
 python -m src.main --test --repo tests/fixtures/graph.json --package A
 python -m src.main --test --repo tests/fixtures/graph.json --package A --depth 1
 python -m src.main --test --repo tests/fixtures/graph.json --package A --exclude ext
@@ -136,10 +133,10 @@ python -m src.main --test --repo tests/fixtures/graph.json --package F
 `reverse_edges` меняет направление связей в локальном репозитории.
 После этого та же функция `build_graph` находит пакеты, которые
 зависят от заданного пакета прямо или через другие пакеты.
-Флаг `--reverse` доступен в версии `stage-4` вместе с `--test`.
+Флаг `--reverse` доступен в папке `demo-stage-4` вместе с `--test`.
 
 ```powershell
-git switch --detach stage-4
+cd .\demo-stage-4
 python -m src.main --test --repo tests/fixtures/graph.json --package D --reverse
 python -m src.main --test --repo tests/fixtures/graph.json --package F --reverse
 ```
@@ -162,14 +159,14 @@ Python. `save_graph` сохраняет два файла с одним имен
 в расшифровке под деревом в консоли.
 
 ```powershell
-git switch --detach stage-5
+cd .\demo-stage-5
 python -m src.main --test --repo tests/fixtures/graph.json --package A --tree
 ```
 
 ### Три пакета NuGet
 
 Готовые пары `A.svg`/`A.dot`, `B.svg`/`B.dot`, `C.svg`/`C.dot`
-и результаты сравнения находятся в папке `examples` рядом с проектом.
+и результаты сравнения находятся в папке `examples` в корне проекта.
 Буквы нумеруются заново в каждом графе, поэтому корень каждой схемы
 обозначен `A`.
 
@@ -305,24 +302,14 @@ dotnet nuget why Microsoft.Extensions.DependencyInjection.Abstractions
 ## Проверка и сдача
 
 ```powershell
-git switch main
 python -m unittest discover -s tests -v
 git log --oneline --decorate
 ```
 
 Тесты в `tests` проверяют ввод CLI, чтение манифеста, выбор версий,
 BFS, циклы, фильтрацию, формат DOT и SVG, буквенные подписи и запуск
-без команды `dot`. Тесты обратного обхода находятся в `stage-4`.
-Папка `examples` находится за пределами Git-репозитория. Она содержит
-готовые результаты для показа на защите.
-
-Для публикации создай пустой публичный репозиторий и укажи его адрес
-вместо `URL_РЕПОЗИТОРИЯ`. Выполни команды в папке проекта.
-
-```powershell
-git remote add origin URL_РЕПОЗИТОРИЯ
-git push -u origin main --tags
-```
+без команды `dot`. Тесты обратного обхода находятся в `demo-stage-4/tests`.
+В папке `examples` сохранены результаты для показа на защите.
 
 ### Документация
 
