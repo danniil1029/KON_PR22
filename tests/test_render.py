@@ -20,36 +20,38 @@ from src.render import (
 )
 
 FIXTURE = Path(__file__).parent / "fixtures" / "graph.json"
+ROOT = Package("A")
+
+
+def build_fixture_graph():
+    """Построить граф тестового пакета A."""
+    source = read_test_graph(FIXTURE)
+    return build_graph(ROOT, source.__getitem__)
 
 
 class RenderTests(unittest.TestCase):
     """Проверить сохранение рёбер и корректное дерево для циклов."""
 
-    def setUp(self):
-        """Построить граф тестового пакета A."""
-        source = read_test_graph(FIXTURE)
-        self.root = Package("A")
-        self.graph = build_graph(self.root, source.__getitem__)
-
     def test_dot(self):
         """Сохранить обе связи с общим узлом и обратное ребро цикла."""
-        dot = dot_source(self.graph)
+        dot = dot_source(build_fixture_graph())
         for edge in ['"B" -> "D"', '"C" -> "D"', '"D" -> "A"']:
             self.assertIn(edge, dot)
 
     def test_ascii(self):
         """Отдельно пометить цикл и общую зависимость."""
-        tree = ascii_tree(self.root, self.graph)
+        tree = ascii_tree(ROOT, build_fixture_graph())
         self.assertTrue(tree.isascii())
         self.assertIn("A [cycle]", tree)
         self.assertIn("D [shown]", tree)
 
     def test_svg_edges_and_labels(self):
         """Сохранить все связи, включая цикл, и все подписи."""
-        svg = svg_document(self.graph)
+        graph = build_fixture_graph()
+        svg = svg_document(graph)
         expected = {
             f"{parent} → {child}"
-            for parent, children in self.graph.items()
+            for parent, children in graph.items()
             for child in children
         }
         self.assertEqual(
@@ -57,7 +59,7 @@ class RenderTests(unittest.TestCase):
         )
         self.assertEqual(
             {label.text for label in svg.findall("./g/text")},
-            {str(node) for node in self.graph},
+            {str(node) for node in graph},
         )
         self.assertIsNotNone(svg.find("./g/path[@stroke-dasharray]"))
 
@@ -102,4 +104,4 @@ class RenderTests(unittest.TestCase):
             self.assertEqual(xml.parse(output).getroot().tag,
                              f"{{{SVG_NAMESPACE}}}svg")
             dot = output.with_suffix(".dot").read_text(encoding="utf-8")
-            self.assertEqual(dot, dot_source(self.graph))
+            self.assertEqual(dot, dot_source(build_fixture_graph()))
