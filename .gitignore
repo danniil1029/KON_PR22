@@ -7,3 +7,5 @@ __pycache__/
 out/
 *.dot
 *.svg
+!/examples/*.dot
+!/examples/*.svg
